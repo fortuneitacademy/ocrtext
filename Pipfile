@@ -16,6 +16,9 @@ Django = "==4.0.5"
 Markdown = "==3.3.7"
 Pillow = "==9.0.1"
 gunicorn = "*"
+environs = "==8.0.0"
+whitenoise = "==6.2.0"
+dj-database-url = "*"
 
 [dev-packages]
 

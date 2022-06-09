@@ -10,9 +10,13 @@ import numpy as np
 import base64
 from django.contrib import messages
 from django.shortcuts import render
+from environs import Env
+env = Env()
+env.read_env()
+# SECURITY WARNING: keep the secret key used in production secret!
 
 
-pytesseract.pytesseract.tesseract_cmd = "/app/.apt/usr/bin/tesseract"
+pytesseract.pytesseract.tesseract_cmd = env.str('ocr')
 
 @permission_classes((permissions.AllowAny,))
 def homepage(request):
