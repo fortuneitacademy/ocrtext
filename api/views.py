@@ -1,4 +1,6 @@
 from gettext import npgettext
+import mimetypes
+from django.http import HttpResponse
 from django.shortcuts import render
 from django.http.response import FileResponse
 from rest_framework.response import Response
@@ -41,18 +43,22 @@ def homepage(request):
         lang = request.POST["language"]
         if lang == 'rembg':
             try:
-                image_base64 = base64.b64encode(image.read()).decode("utf-8")
-                path = os.path.join(os.getcwd(),'api','hay3.jpg')
-                img = Image.open(image)
-                img.save(path)
-                img = cv2.imread(path)
-                segmentor = SelfiSegmentation()
-                thre = 0.65
-                imgOut = segmentor.removeBG(img, threshold=thre)
-                cv2.imwrite(path,imgOut)
-                text = " "
-                image_base64 = base64.b64encode(open(path,'rb').read()).decode("utf-8")
-                return render(request, "home.html", {"ocr": text, "image": image_base64})
+                with BytesIO() as file:
+                    image_base64 = base64.b64encode(image.read()).decode("utf-8")
+                    img = Image.open(image).convert('RGB')
+                    img.save(file,format='JPEG')
+                    img = np.asarray(bytearray(file.getvalue()),dtype=np.uint8)
+                    img = cv2.imdecode(img,cv2.IMREAD_ANYCOLOR)
+                    segmentor = SelfiSegmentation()
+                    thre = 0.55
+                    imgOut = segmentor.removeBG(img, threshold=thre)
+                    img = cv2.cvtColor(imgOut,cv2.COLOR_BGR2RGB)
+                    file3 = BytesIO()
+                    file2 = Image.fromarray(img)
+                    file2.save(file3,format='JPEG')
+                    text = ' '
+                    image_base64 = base64.b64encode(file3.getvalue()).decode("utf-8")
+                    return render(request, "home.html", {"ocr": text, "image": image_base64})
             except Exception as e:
                 image_base64 = base64.b64encode(image.read()).decode("utf-8")
                 return render(request, "home.html", {"ocr": e, "image": image_base64})
@@ -106,19 +112,22 @@ def rembg(request):
                 thre = float(thre)
             except:
                 pass
-            path = os.path.join(os.getcwd(),'api','hay3.jpg')
-            print(path)
-            img2 = Image.open(image) 
-            img2.save(path)
-            img = cv2.imread(path)
-            if width > 1 and height > 1:
-                img = cv2.resize(img, (width,height))
-            segmentor = SelfiSegmentation()
-            imgOut = segmentor.removeBG(img, threshold=thre)
-            cv2.imwrite(path,imgOut)
+            with BytesIO() as file:
+                img = Image.open(image).convert('RGB')
+                img.save(file,format='JPEG')
+                img = np.asarray(bytearray(file.getvalue()),dtype=np.uint8)
+                img = cv2.imdecode(img,cv2.IMREAD_ANYCOLOR)
+                segmentor = SelfiSegmentation()
+                thre = 0.55
+                imgOut = segmentor.removeBG(img, threshold=thre)
+                img = cv2.cvtColor(imgOut,cv2.COLOR_BGR2RGB)
+                file2 = Image.fromarray(img)
+                response = HttpResponse(content_type='image/jpg')
+                file2.save(response, "JPEG")
+                response['Content-Disposition'] = 'attachment; filename="piece.jpg"'
         except Exception as e:
             return Response({'thre':None,'width':None,'width':None,'file':None,'error':str(e)})
         else:
-            return FileResponse(open(path,'rb'))
+            return response
     else:
         return Response({'thre':None,'width':None,'width':None,'file':None})
