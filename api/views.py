@@ -131,3 +131,37 @@ def rembg(request):
             return response
     else:
         return Response({'thre':None,'width':None,'width':None,'file':None})
+@api_view(['GET'])
+@permission_classes((permissions.AllowAny,))
+def rembg(request):
+    if request.method == "POST":
+        try:
+            image = request.FILES["img"]
+            segmentor = SelfiSegmentation()
+            thre = 0.8
+            try:
+                thre = request.POST["thre"]
+                width = int(request.POST["width"])
+                height = int(request.POST["height"])
+                thre = float(thre)
+            except:
+                pass
+            with BytesIO() as file:
+                img = Image.open(image).convert('RGB')
+                img.save(file,format='JPEG')
+                img = np.asarray(bytearray(file.getvalue()),dtype=np.uint8)
+                img = cv2.imdecode(img,cv2.IMREAD_ANYCOLOR)
+                segmentor = SelfiSegmentation()
+                thre = 0.55
+                imgOut = segmentor.removeBG(img, threshold=thre)
+                img = cv2.cvtColor(imgOut,cv2.COLOR_BGR2RGB)
+                file2 = Image.fromarray(img)
+                response = HttpResponse(content_type='image/jpg')
+                file2.save(response, "JPEG")
+                response['Content-Disposition'] = 'attachment; filename="piece.jpg"'
+        except Exception as e:
+            return Response({'thre':None,'width':None,'width':None,'file':None,'error':str(e)})
+        else:
+            return response
+    else:
+        return Response({'thre':None,'width':None,'width':None,'file':None})
