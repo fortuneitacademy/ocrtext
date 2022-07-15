@@ -100,21 +100,23 @@ def rembg(request):
         try:
             image = request.FILES["img"]
             segmentor = SelfiSegmentation()
-            thre = 0.8
+            thre = 0.5
             try:
                 thre = request.POST["thre"]
                 width = int(request.POST["width"])
                 height = int(request.POST["height"])
                 thre = float(thre)
             except:
-                pass
+                width = int(0)
+                height = int(0)
             with BytesIO() as file:
                 img = Image.open(image).convert('RGB')
                 img.save(file,format='JPEG')
                 img = np.asarray(bytearray(file.getvalue()),dtype=np.uint8)
                 img = cv2.imdecode(img,cv2.IMREAD_ANYCOLOR)
+                if width > 0 and height > 0:
+                    img = cv2.resize(img,(width,height))
                 segmentor = SelfiSegmentation()
-                thre = 0.55
                 imgOut = segmentor.removeBG(img, threshold=thre)
                 img = cv2.cvtColor(imgOut,cv2.COLOR_BGR2RGB)
                 file2 = Image.fromarray(img)
@@ -126,4 +128,4 @@ def rembg(request):
         else:
             return response
     else:
-        return Response({'thre':None,'width':None,'width':None,'file':None})
+        return Response({'thre':None,'width':None,'width':None,'file':None,'error':"str(e)"})
