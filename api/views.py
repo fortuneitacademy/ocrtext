@@ -29,7 +29,6 @@ try:
     pytesseract.pytesseract.tesseract_cmd = env.str('ocr')
 except:
     pass
-@permission_classes((permissions.AllowAny,))
 def homepage(request):
     if request.method == "POST":
         try:
@@ -42,44 +41,41 @@ def homepage(request):
             return render(request, "home.html")
         lang = request.POST["language"]
         if lang == 'rembg':
-            try:
-                with BytesIO() as file:
-                    image_base64 = base64.b64encode(image.read()).decode("utf-8")
-                    img = Image.open(image).convert('RGB')
-                    img.save(file,format='JPEG')
-                    img = np.asarray(bytearray(file.getvalue()),dtype=np.uint8)
-                    img = cv2.imdecode(img,cv2.IMREAD_ANYCOLOR)
-                    segmentor = SelfiSegmentation()
-                    thre = 0.55
-                    imgOut = segmentor.removeBG(img, threshold=thre)
-                    img = cv2.cvtColor(imgOut,cv2.COLOR_BGR2RGB)
-                    file3 = BytesIO()
-                    file2 = Image.fromarray(img)
-                    file2.save(file3,format='JPEG')
-                    text = ' '
-                    image_base64 = base64.b64encode(file3.getvalue()).decode("utf-8")
-                    return render(request, "home.html", {"ocr": text, "image": image_base64})
-            except Exception as e:
+            #try:
+            with BytesIO() as file:
                 image_base64 = base64.b64encode(image.read()).decode("utf-8")
-                return render(request, "home.html", {"ocr": e, "image": image_base64})
+                img = Image.open(image).convert('RGB')
+                img.save(file,format='JPEG')
+                img = np.asarray(bytearray(file.getvalue()),dtype=np.uint8)
+            img = cv2.imdecode(img,cv2.IMREAD_ANYCOLOR)
+            segmentor = SelfiSegmentation()
+            thre = 0.55
+            imgOut = segmentor.removeBG(img, threshold=thre)
+            img = cv2.cvtColor(imgOut,cv2.COLOR_BGR2RGB)
+            file3 = BytesIO()
+            file2 = Image.fromarray(img)
+            file2.save(file3,format='JPEG')
+            text = ' '
+            image_base64 = base64.b64encode(file3.getvalue()).decode("utf-8")
+            file3.close()
+            return render(request, "home.html", {"ocr": text, "image": image_base64})
+            #except Exception as e:
+            #
+            #    image_base64 = base64.b64encode(image.read()).decode("utf-8")
+            #    return render(request, "home.html", {"ocr": e, "image": image_base64})
                 
         else:
-            try:
-                image_base64 = base64.b64encode(image.read()).decode("utf-8")
-                img = np.array(Image.open(image))
-                text = pytesseract.image_to_string(img, lang=lang)
-                return render(request, "home.html", {"ocr": text, "image": image_base64})
-            except:
-                return Response({'goo':122})
+            #try:
+            image_base64 = base64.b64encode(image.read()).decode("utf-8")
+            img = np.array(Image.open(image))
+            text = pytesseract.image_to_string(img, lang=lang)
+            return render(request, "home.html", {"ocr": text, "image": image_base64})
+            #except:
+            #    return Response({'goo':122})
 
     return render(request, "home.html")
 
 
-@api_view(['GET'])
-@permission_classes((permissions.AllowAny,))
-def api(request):
-    person = {'img':'file source','language':'select: uzb or eng'}
-    return Response(person)
 
 @api_view(['POST'])
 @permission_classes((permissions.AllowAny,))
@@ -98,40 +94,6 @@ def api(request):
         person = {'img':'file source','language':'select: uzb or eng'}
         return Response(person)
 @api_view(['POST'])
-@permission_classes((permissions.AllowAny,))
-def rembg(request):
-    if request.method == "POST":
-        try:
-            image = request.FILES["img"]
-            segmentor = SelfiSegmentation()
-            thre = 0.8
-            try:
-                thre = request.POST["thre"]
-                width = int(request.POST["width"])
-                height = int(request.POST["height"])
-                thre = float(thre)
-            except:
-                pass
-            with BytesIO() as file:
-                img = Image.open(image).convert('RGB')
-                img.save(file,format='JPEG')
-                img = np.asarray(bytearray(file.getvalue()),dtype=np.uint8)
-                img = cv2.imdecode(img,cv2.IMREAD_ANYCOLOR)
-                segmentor = SelfiSegmentation()
-                thre = 0.55
-                imgOut = segmentor.removeBG(img, threshold=thre)
-                img = cv2.cvtColor(imgOut,cv2.COLOR_BGR2RGB)
-                file2 = Image.fromarray(img)
-                response = HttpResponse(content_type='image/jpg')
-                file2.save(response, "JPEG")
-                response['Content-Disposition'] = 'attachment; filename="piece.jpg"'
-        except Exception as e:
-            return Response({'thre':None,'width':None,'width':None,'file':None,'error':str(e)})
-        else:
-            return response
-    else:
-        return Response({'thre':None,'width':None,'width':None,'file':None})
-@api_view(['GET'])
 @permission_classes((permissions.AllowAny,))
 def rembg(request):
     if request.method == "POST":
